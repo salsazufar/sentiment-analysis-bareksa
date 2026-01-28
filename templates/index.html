@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bareksa Review Sentiment</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0f172a;
+        --bg-card: #020617;
+        --border: #1e293b;
+        --accent: #38bdf8;
+        --accent-soft: rgba(56, 189, 248, 0.1);
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --danger: #f87171;
+        --success: #4ade80;
+        --warning: #facc15;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: radial-gradient(circle at top, #1e293b 0, #020617 60%);
+        color: var(--text);
+        display: flex;
+        justify-content: center;
+        align-items: stretch;
+        padding: 24px;
+      }
+
+      .shell {
+        width: 100%;
+        max-width: 1120px;
+        display: grid;
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+        gap: 20px;
+      }
+
+      @media (max-width: 900px) {
+        .shell {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      .card {
+        background: linear-gradient(135deg, #020617, #020617, #020617);
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        padding: 20px 22px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: -40%;
+        background:
+          radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 55%),
+          radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.18), transparent 55%);
+        opacity: 0.9;
+        pointer-events: none;
+      }
+
+      .card-inner {
+        position: relative;
+        z-index: 1;
+      }
+
+      .title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .title-row h1 {
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .pill {
+        font-size: 0.75rem;
+        padding: 3px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.5);
+        color: var(--muted);
+      }
+
+      .subtitle {
+        font-size: 0.9rem;
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+
+      label {
+        display: block;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 130px;
+        resize: vertical;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        font: inherit;
+        background: rgba(15, 23, 42, 0.85);
+        color: var(--text);
+        outline: none;
+      }
+
+      textarea:focus-visible {
+        border-color: rgba(56, 189, 248, 0.9);
+        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 10px;
+        gap: 12px;
+      }
+
+      .samples {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .chip {
+        font-size: 0.75rem;
+        padding: 4px 9px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.6);
+        background: rgba(15, 23, 42, 0.9);
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .chip:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      button.primary {
+        border: none;
+        border-radius: 999px;
+        padding: 9px 18px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        background: radial-gradient(circle at 0 0, #22d3ee, #0ea5e9 60%, #6366f1);
+        color: #0b1220;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 12px 28px rgba(37, 99, 235, 0.5);
+      }
+
+      button.primary[disabled] {
+        opacity: 0.7;
+        cursor: wait;
+        box-shadow: none;
+      }
+
+      .status {
+        font-size: 0.8rem;
+        color: var(--muted);
+        min-height: 1.2em;
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .status.success {
+        color: var(--success);
+      }
+
+      .badge-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .sentiment-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        padding: 5px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(15, 23, 42, 0.92);
+      }
+
+      .sentiment-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+      }
+
+      .score-chip {
+        font-size: 0.78rem;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px dashed rgba(148, 163, 184, 0.7);
+        color: var(--muted);
+      }
+
+      .section-title {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        font-size: 0.8rem;
+        background: rgba(15, 23, 42, 0.8);
+        border-radius: 12px;
+        padding: 8px 10px;
+        border: 1px solid rgba(15, 23, 42, 0.8);
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 230px;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+
+      .history-item {
+        border-radius: 12px;
+        padding: 8px 10px;
+        border: 1px solid rgba(15, 23, 42, 0.9);
+        background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.96), #020617);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .history-label-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.78rem;
+      }
+
+      .history-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .history-text {
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+
+      .about-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .metric {
+        border-radius: 12px;
+        padding: 10px 11px;
+        border: 1px solid rgba(15, 23, 42, 0.9);
+        background: rgba(15, 23, 42, 0.96);
+      }
+
+      .metric-label {
+        font-size: 0.75rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .metric-value {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-top: 4px;
+      }
+
+      .metric-sub {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
+      .stats-container {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .confidence-breakdown {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 10px;
+      }
+
+      .confidence-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .confidence-label-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.8rem;
+      }
+
+      .confidence-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+      }
+
+      .confidence-value {
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .progress-bar-container {
+        width: 100%;
+        height: 8px;
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 999px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .progress-bar-fill {
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.3s ease;
+        position: relative;
+      }
+
+      .progress-bar-fill.positif {
+        background: linear-gradient(90deg, var(--success), #22c55e);
+      }
+
+      .progress-bar-fill.netral {
+        background: linear-gradient(90deg, var(--warning), #eab308);
+      }
+
+      .progress-bar-fill.negatif {
+        background: linear-gradient(90deg, var(--danger), #ef4444);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <div class="card-inner">
+          <header class="title-row">
+            <h1>
+              Bareksa Sentiment
+              <span class="pill">NLP • Indonesian Reviews</span>
+            </h1>
+          </header>
+          <p class="subtitle">
+            Masukkan ulasan aplikasi Bareksa (atau teks serupa) untuk
+            diklasifikasikan menjadi sentimen <strong>positif</strong>,
+            <strong>netral</strong>, atau <strong>negatif</strong>.
+          </p>
+
+          <form id="predict-form">
+            <label for="text">Teks Ulasan</label>
+            <textarea
+              id="text"
+              name="text"
+              placeholder="Contoh: Aplikasi Bareksa membantu saya mengatur investasi dengan sangat mudah..."
+            ></textarea>
+
+            <div class="actions">
+              <div class="samples">
+                <button
+                  type="button"
+                  class="chip"
+                  data-sample="Aplikasinya sangat membantu, tampilan rapi dan proses pembelian reksa dana cepat."
+                >
+                  Contoh positif
+                </button>
+                <button
+                  type="button"
+                  class="chip"
+                  data-sample="Fitur cukup lengkap tapi performa aplikasi kadang lambat saat membuka portofolio."
+                >
+                  Contoh netral
+                </button>
+                <button
+                  type="button"
+                  class="chip"
+                  data-sample="Sering error saat login dan penarikan dana terlalu lama diproses."
+                >
+                  Contoh negatif
+                </button>
+              </div>
+              <button type="submit" class="primary" id="submit-btn">
+                <span id="btn-label">Analisis Sentimen</span>
+              </button>
+            </div>
+          </form>
+          <div id="status" class="status"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-inner">
+          <div class="badge-row">
+            <div class="sentiment-badge" id="sentiment-badge" style="display:none;">
+              <span
+                class="sentiment-dot"
+                id="sentiment-dot"
+                style="background: var(--accent);"
+              ></span>
+              <span id="sentiment-label">Sentimen</span>
+            </div>
+            <div class="score-chip" id="score-chip" style="display:none;">
+              Skor: <span id="score-value">0.00</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title">Teks Terproses</div>
+            <div id="clean-text" class="mono">
+              Teks yang sudah dipreproses (lowercase, cleaning, stopword removal,
+              stemming) akan muncul di sini.
+            </div>
+          </div>
+
+          <div style="margin-top: 14px;">
+            <div class="section-title">Riwayat Prediksi (session)</div>
+            <div id="history" class="history-list"></div>
+          </div>
+
+          <div style="margin-top: 14px;">
+            <div class="section-title">Statistik Sesi</div>
+            <div class="stats-container">
+              <div class="metric">
+                <div class="metric-label">Total Prediksi</div>
+                <div class="metric-value" id="total-predictions">0</div>
+                <div class="metric-sub">Prediksi dalam sesi ini</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Distribusi</div>
+                <div class="metric-value" id="distribution">-</div>
+                <div class="metric-sub" id="distribution-detail">Belum ada prediksi</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Rata-rata Skor</div>
+                <div class="metric-value" id="avg-score">-</div>
+                <div class="metric-sub" id="avg-score-detail">Belum ada prediksi</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Dominan</div>
+                <div class="metric-value" id="dominant-sentiment">-</div>
+                <div class="metric-sub" id="dominant-detail">Belum ada prediksi</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 14px;">
+            <div class="section-title">Breakdown Confidence Score</div>
+            <div class="confidence-breakdown" id="confidence-breakdown">
+              <div class="confidence-item">
+                <div class="confidence-label-row">
+                  <div class="confidence-label">
+                    <span class="sentiment-dot" style="background: var(--success);"></span>
+                    <span>Positif</span>
+                  </div>
+                  <span class="confidence-value" id="conf-positif">0.00%</span>
+                </div>
+                <div class="progress-bar-container">
+                  <div class="progress-bar-fill positif" id="bar-positif" style="width: 0%;"></div>
+                </div>
+              </div>
+              <div class="confidence-item">
+                <div class="confidence-label-row">
+                  <div class="confidence-label">
+                    <span class="sentiment-dot" style="background: var(--warning);"></span>
+                    <span>Netral</span>
+                  </div>
+                  <span class="confidence-value" id="conf-netral">0.00%</span>
+                </div>
+                <div class="progress-bar-container">
+                  <div class="progress-bar-fill netral" id="bar-netral" style="width: 0%;"></div>
+                </div>
+              </div>
+              <div class="confidence-item">
+                <div class="confidence-label-row">
+                  <div class="confidence-label">
+                    <span class="sentiment-dot" style="background: var(--danger);"></span>
+                    <span>Negatif</span>
+                  </div>
+                  <span class="confidence-value" id="conf-negatif">0.00%</span>
+                </div>
+                <div class="progress-bar-container">
+                  <div class="progress-bar-fill negatif" id="bar-negatif" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("predict-form");
+      const textarea = document.getElementById("text");
+      const statusEl = document.getElementById("status");
+      const submitBtn = document.getElementById("submit-btn");
+      const btnLabel = document.getElementById("btn-label");
+      const sentimentBadge = document.getElementById("sentiment-badge");
+      const sentimentDot = document.getElementById("sentiment-dot");
+      const sentimentLabel = document.getElementById("sentiment-label");
+      const scoreChip = document.getElementById("score-chip");
+      const scoreValue = document.getElementById("score-value");
+      const cleanText = document.getElementById("clean-text");
+      const historyList = document.getElementById("history");
+
+      let history = [];
+
+      function setLoading(isLoading) {
+        submitBtn.disabled = isLoading;
+        btnLabel.textContent = isLoading ? "Menganalisis..." : "Analisis Sentimen";
+      }
+
+      function classifyBadge(label) {
+        const normalized = label.toLowerCase();
+        let color = "var(--accent)";
+        let text = label;
+
+        if (normalized.includes("positif")) {
+          color = "var(--success)";
+        } else if (normalized.includes("negatif")) {
+          color = "var(--danger)";
+        } else if (normalized.includes("netral")) {
+          color = "var(--warning)";
+        }
+
+        sentimentDot.style.background = color;
+        sentimentLabel.textContent = text;
+        sentimentBadge.style.display = "inline-flex";
+      }
+
+      function updateHistory(entry) {
+        history.unshift(entry);
+        history = history.slice(0, 7);
+
+        historyList.innerHTML = "";
+        history.forEach((item) => {
+          const node = document.createElement("div");
+          node.className = "history-item";
+
+          const labelRow = document.createElement("div");
+          labelRow.className = "history-label-row";
+
+          const labelSpan = document.createElement("div");
+          labelSpan.className = "history-label";
+
+          const dot = document.createElement("span");
+          dot.className = "sentiment-dot";
+          if (item.sentiment.toLowerCase().includes("positif")) {
+            dot.style.background = "var(--success)";
+          } else if (item.sentiment.toLowerCase().includes("negatif")) {
+            dot.style.background = "var(--danger)";
+          } else if (item.sentiment.toLowerCase().includes("netral")) {
+            dot.style.background = "var(--warning)";
+          } else {
+            dot.style.background = "var(--accent)";
+          }
+
+          const labelText = document.createElement("span");
+          labelText.textContent = item.sentiment;
+
+          labelSpan.appendChild(dot);
+          labelSpan.appendChild(labelText);
+
+          const scoreSpan = document.createElement("span");
+          scoreSpan.textContent = item.score.toFixed(2);
+          scoreSpan.style.fontSize = "0.78rem";
+          scoreSpan.style.color = "var(--muted)";
+
+          labelRow.appendChild(labelSpan);
+          labelRow.appendChild(scoreSpan);
+
+          const textDiv = document.createElement("div");
+          textDiv.className = "history-text";
+          textDiv.textContent = item.text;
+
+          node.appendChild(labelRow);
+          node.appendChild(textDiv);
+          historyList.appendChild(node);
+        });
+      }
+
+      function updateSessionStats() {
+        if (history.length === 0) {
+          document.getElementById("total-predictions").textContent = "0";
+          document.getElementById("distribution").textContent = "-";
+          document.getElementById("distribution-detail").textContent = "Belum ada prediksi";
+          document.getElementById("avg-score").textContent = "-";
+          document.getElementById("avg-score-detail").textContent = "Belum ada prediksi";
+          document.getElementById("dominant-sentiment").textContent = "-";
+          document.getElementById("dominant-detail").textContent = "Belum ada prediksi";
+          return;
+        }
+
+        const total = history.length;
+        const counts = { positif: 0, netral: 0, negatif: 0 };
+        const scores = { positif: [], netral: [], negatif: [] };
+
+        history.forEach((item) => {
+          const sentiment = item.sentiment.toLowerCase();
+          if (sentiment.includes("positif")) {
+            counts.positif++;
+            scores.positif.push(item.score);
+          } else if (sentiment.includes("negatif")) {
+            counts.negatif++;
+            scores.negatif.push(item.score);
+          } else if (sentiment.includes("netral")) {
+            counts.netral++;
+            scores.netral.push(item.score);
+          }
+        });
+
+        // Update total
+        document.getElementById("total-predictions").textContent = total.toString();
+
+        // Update distribution
+        const distText = `${counts.positif}/${counts.netral}/${counts.negatif}`;
+        document.getElementById("distribution").textContent = distText;
+        document.getElementById("distribution-detail").textContent = 
+          `Positif: ${counts.positif}, Netral: ${counts.netral}, Negatif: ${counts.negatif}`;
+
+        // Update average score
+        const allScores = history.map((item) => item.score);
+        const avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+        document.getElementById("avg-score").textContent = avgScore.toFixed(2);
+        document.getElementById("avg-score-detail").textContent = 
+          `Rata-rata dari ${total} prediksi`;
+
+        // Update dominant sentiment
+        const maxCount = Math.max(counts.positif, counts.netral, counts.negatif);
+        let dominant = "-";
+        if (maxCount > 0) {
+          if (counts.positif === maxCount) dominant = "Positif";
+          else if (counts.netral === maxCount) dominant = "Netral";
+          else if (counts.negatif === maxCount) dominant = "Negatif";
+        }
+        document.getElementById("dominant-sentiment").textContent = dominant;
+        document.getElementById("dominant-detail").textContent = 
+          maxCount > 0 ? `${maxCount} dari ${total} prediksi` : "Belum ada prediksi";
+      }
+
+      function updateConfidenceBreakdown(probabilities) {
+        if (!probabilities) {
+          // Reset to 0 if no probabilities
+          document.getElementById("conf-positif").textContent = "0.00%";
+          document.getElementById("conf-netral").textContent = "0.00%";
+          document.getElementById("conf-negatif").textContent = "0.00%";
+          document.getElementById("bar-positif").style.width = "0%";
+          document.getElementById("bar-netral").style.width = "0%";
+          document.getElementById("bar-negatif").style.width = "0%";
+          return;
+        }
+
+        // Normalize keys (handle case variations)
+        const getProb = (key) => {
+          const normalized = key.toLowerCase();
+          for (const [k, v] of Object.entries(probabilities)) {
+            if (k.toLowerCase() === normalized) return v;
+          }
+          return 0;
+        };
+
+        const probPositif = getProb("positif");
+        const probNetral = getProb("netral");
+        const probNegatif = getProb("negatif");
+
+        // Update percentages
+        document.getElementById("conf-positif").textContent = 
+          (probPositif * 100).toFixed(2) + "%";
+        document.getElementById("conf-netral").textContent = 
+          (probNetral * 100).toFixed(2) + "%";
+        document.getElementById("conf-negatif").textContent = 
+          (probNegatif * 100).toFixed(2) + "%";
+
+        // Update progress bars
+        document.getElementById("bar-positif").style.width = 
+          (probPositif * 100).toFixed(1) + "%";
+        document.getElementById("bar-netral").style.width = 
+          (probNetral * 100).toFixed(1) + "%";
+        document.getElementById("bar-negatif").style.width = 
+          (probNegatif * 100).toFixed(1) + "%";
+      }
+
+      document.querySelectorAll(".chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          textarea.value = chip.getAttribute("data-sample") || "";
+        });
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const text = textarea.value.trim();
+        if (!text) {
+          statusEl.textContent = "Silakan masukkan teks ulasan terlebih dahulu.";
+          statusEl.className = "status error";
+          return;
+        }
+
+        setLoading(true);
+        statusEl.textContent = "";
+        statusEl.className = "status";
+
+        try {
+          const res = await fetch("/predict", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ text }),
+          });
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            const detail =
+              (data && (data.detail || data.message)) ||
+              `HTTP ${res.status}`;
+            throw new Error(detail);
+          }
+
+          const data = await res.json();
+          classifyBadge(data.label || "Tidak diketahui");
+          scoreValue.textContent = (data.score || 0).toFixed(2);
+          scoreChip.style.display = "inline-flex";
+          cleanText.textContent =
+            data.clean_text ||
+            "Teks terproses tidak tersedia untuk input ini.";
+
+          updateHistory({
+            text,
+            sentiment: data.label || "Tidak diketahui",
+            score: data.score || 0,
+            probabilities: data.probabilities || {},
+          });
+
+          // Update session statistics
+          updateSessionStats();
+
+          // Update confidence breakdown
+          updateConfidenceBreakdown(data.probabilities);
+
+          statusEl.textContent = "Prediksi berhasil.";
+          statusEl.className = "status success";
+        } catch (err) {
+          statusEl.textContent =
+            "Gagal memproses permintaan: " + (err.message || String(err));
+          statusEl.className = "status error";
+        } finally {
+          setLoading(false);
+        }
+      });
+    </script>
+  </body>
+</html>
+
