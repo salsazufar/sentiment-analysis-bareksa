@@ -1,0 +1,85 @@
+# -----------------------------------------------------------------------------
+# Credentials & secrets – never commit
+# -----------------------------------------------------------------------------
+.env
+.env.*
+.env.local
+.env.production
+.env.development
+*.env
+
+credentials.json
+credentials*.json
+service-account*.json
+*-credentials.json
+
+secrets.json
+secrets.yaml
+secrets.yml
+*.secrets
+
+config.local.*
+local.config.*
+*_local.py
+
+*.pem
+*.key
+*.crt
+token.pickle
+oauth*.json
+
+# -----------------------------------------------------------------------------
+# Python
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# -----------------------------------------------------------------------------
+# Virtual environments
+# -----------------------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+
+# -----------------------------------------------------------------------------
+# IDE & OS
+# -----------------------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# -----------------------------------------------------------------------------
+# Jupyter & ML
+# -----------------------------------------------------------------------------
+.ipynb_checkpoints/
+.keras/
+*.h5
+*.hdf5
+
+# -----------------------------------------------------------------------------
+# Artifacts and models
+# -----------------------------------------------------------------------------
+app/artifacts/
+best_lstm_model.keras

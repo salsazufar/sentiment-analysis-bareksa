@@ -8,4 +8,6 @@ xgboost
 tensorflow
 nltk
 Sastrawi
-csv
+fastapi
+uvicorn[standard]
+jinja2
