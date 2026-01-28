@@ -14,7 +14,10 @@ Arsitektur:
 
 from __future__ import annotations
 
+import json
 import pickle
+import tempfile
+import zipfile
 from pathlib import Path
 from typing import List, Tuple
 
@@ -30,6 +33,44 @@ LABEL_ENCODER_PATH = ARTIFACTS_DIR / "label_encoder.pkl"
 # Hyperparameters yang sama dengan training
 MAX_WORDS = 10000
 MAX_LEN = 100
+
+
+def _strip_key_recursive(obj, key: str):
+    if isinstance(obj, dict):
+        obj.pop(key, None)
+        for v in obj.values():
+            _strip_key_recursive(v, key)
+    elif isinstance(obj, list):
+        for v in obj:
+            _strip_key_recursive(v, key)
+
+
+def _patched_keras_archive_without_quantization_config(model_path: Path) -> Path:
+    """
+    Some Keras versions cannot deserialize layer configs that include
+    `quantization_config`. If we detect that failure, patch the `.keras` zip
+    by removing `quantization_config` keys from `config.json` and retry.
+    """
+
+    with zipfile.ZipFile(model_path, "r") as zin:
+        if "config.json" not in zin.namelist():
+            # Not a standard Keras v3 `.keras` archive; nothing we can patch.
+            return model_path
+        config = json.loads(zin.read("config.json").decode("utf-8"))
+        _strip_key_recursive(config, "quantization_config")
+
+        tmp_dir = Path(tempfile.gettempdir()) / "bareksa_sentiment"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        patched_path = tmp_dir / f"{model_path.stem}.no_quantization_config.keras"
+
+        with zipfile.ZipFile(patched_path, "w", compression=zipfile.ZIP_DEFLATED) as zout:
+            for info in zin.infolist():
+                if info.filename == "config.json":
+                    zout.writestr("config.json", json.dumps(config).encode("utf-8"))
+                else:
+                    zout.writestr(info, zin.read(info.filename))
+
+    return patched_path
 
 
 class SentimentModel:
@@ -87,7 +128,18 @@ class SentimentModel:
             )
 
         # Load Keras model
-        self._model = tf.keras.models.load_model(self.model_path)
+        try:
+            self._model = tf.keras.models.load_model(self.model_path)
+        except Exception as exc:
+            msg = str(exc)
+            if "quantization_config" in msg and "Embedding" in msg and self.model_path.suffix == ".keras":
+                patched = _patched_keras_archive_without_quantization_config(self.model_path)
+                if patched != self.model_path:
+                    self._model = tf.keras.models.load_model(patched)
+                else:
+                    raise
+            else:
+                raise
 
         # Load tokenizer
         with self.tokenizer_path.open("rb") as f:

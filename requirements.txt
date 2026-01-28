@@ -11,3 +11,4 @@ Sastrawi
 fastapi
 uvicorn[standard]
 jinja2
+huggingface_hub

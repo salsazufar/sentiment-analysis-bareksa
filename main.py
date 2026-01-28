@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from app.predict import predict_sentiment
+from app.hf_artifacts import ensure_model_artifacts
 
 
 templates = Jinja2Templates(directory="templates")
@@ -33,6 +34,16 @@ app = FastAPI(
     description="API untuk analisis sentimen ulasan aplikasi Bareksa.",
     version="0.1.0",
 )
+
+
+@app.on_event("startup")
+def _startup_download_artifacts() -> None:
+    """
+    On Hugging Face Spaces, artifacts may not be committed to the repo.
+    Download them from the Hugging Face Hub if missing.
+    """
+
+    ensure_model_artifacts()
 
 
 @app.get("/", response_class=HTMLResponse, tags=["ui"])

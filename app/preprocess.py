@@ -36,6 +36,13 @@ def _ensure_nltk_resources() -> None:
     except LookupError:
         nltk.download("punkt")
 
+    # Newer NLTK versions also require `punkt_tab` for sentence tokenization.
+    # Without it, `nltk.word_tokenize` may fail with "Resource punkt_tab not found".
+    try:
+        nltk.data.find("tokenizers/punkt_tab/english")
+    except LookupError:
+        nltk.download("punkt_tab")
+
     try:
         nltk.data.find("corpora/stopwords")
     except LookupError:

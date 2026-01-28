@@ -1,3 +1,9 @@
+---
+title: Bareksa Review Sentiment (FastAPI)
+sdk: docker
+app_port: 7860
+---
+
 # Bareksa App Review Sentiment Analysis (NLP)
 
 NLP project for classifying Google Play reviews of the Bareksa app into sentiments (positive, neutral, negative). Includes data scraping, preprocessing (ID/EN), a classic ML baseline (TF‑IDF + Logistic Regression), a BiLSTM model (TensorFlow/Keras), and a **FastAPI** backend with **web UI** for predictions.
@@ -45,6 +51,37 @@ uvicorn main:app --reload
 ```
 
 Open **http://127.0.0.1:8000** for the UI, or call `POST /predict` with body `{"text": "your review..."}`.
+
+## Deploy to Hugging Face Spaces (Docker)
+
+This repo can be deployed as a **Docker Space** while keeping:
+- **FastAPI** backend (same routes)
+- **Identical UI** from `templates/index.html` (served by FastAPI at `/`)
+
+### 1) Upload model artifacts to a Hugging Face *Model* repo
+
+Create a HF model repo that contains these files at the repo root:
+- `best_lstm_model.keras`
+- `tokenizer.pkl`
+- `label_encoder.pkl`
+
+### 2) Create the Space and set environment variables
+
+In your Space **Settings → Variables/Secrets** set:
+- **Variable** `HF_MODEL_REPO_ID`: your model repo id, e.g. `username/bareksa-sentiment-model`
+- **Optional Variable** `HF_MODEL_REVISION`: a tag/commit/branch to pin downloads (recommended)
+- **Secret** `HF_TOKEN`: only needed if the model repo is private
+
+On container startup, the app will download missing artifacts into:
+- `./best_lstm_model.keras`
+- `./app/artifacts/tokenizer.pkl`
+- `./app/artifacts/label_encoder.pkl`
+
+### 3) Verify
+
+After the Space builds:
+- Open the Space URL → you should see the same UI.
+- Submit text → the UI calls `POST /predict` on the same origin.
 
 ## API
 
